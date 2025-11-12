@@ -9,6 +9,16 @@ from app.models.order import (
     OrderType,
     PaymentMethod,
 )
+from app.models.product import Product, ProductCategory
+from app.models.inventory import (
+    Batch,
+    Warehouse,
+    Stock,
+    StockMovement,
+    QCCheckpoint,
+    MovementType,
+    QCCheckpointType,
+)
 
 __all__ = [
     "User",
@@ -22,4 +32,13 @@ __all__ = [
     "OrderStatus",
     "OrderType",
     "PaymentMethod",
+    "Product",
+    "ProductCategory",
+    "Batch",
+    "Warehouse",
+    "Stock",
+    "StockMovement",
+    "QCCheckpoint",
+    "MovementType",
+    "QCCheckpointType",
 ]

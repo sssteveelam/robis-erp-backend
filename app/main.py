@@ -3,7 +3,17 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1 import auth, users, roles, permissions, customers, orders
+from app.api.v1 import (
+    auth,
+    users,
+    roles,
+    permissions,
+    customers,
+    orders,
+    products,
+    inventory,
+    qc,
+)
 
 
 app = FastAPI(
@@ -62,6 +72,9 @@ app.include_router(roles.router, prefix="/api/v1")
 app.include_router(permissions.router, prefix="/api/v1")
 app.include_router(customers.router, prefix="/api/v1")
 app.include_router(orders.router, prefix="/api/v1")
+app.include_router(products.router, prefix="/api/v1")
+app.include_router(inventory.router, prefix="/api/v1")
+app.include_router(qc.router, prefix="/api/v1")
 
 
 @app.get("/")
