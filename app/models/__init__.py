@@ -19,6 +19,21 @@ from app.models.inventory import (
     MovementType,
     QCCheckpointType,
 )
+from app.models.hr import (
+    Department,
+    Position,
+    Employee,
+    DepartmentType,
+    EmploymentStatus,
+)
+from app.models.attendance import (
+    Attendance,
+    AttendanceStatus,
+    LeaveType,
+)
+from app.models.performance import PerformanceReview
+
+
 
 __all__ = [
     "User",
@@ -41,4 +56,13 @@ __all__ = [
     "QCCheckpoint",
     "MovementType",
     "QCCheckpointType",
+    "Department",
+    "Position",
+    "Employee",
+    "DepartmentType",
+    "EmploymentStatus",
+    "Attendance",
+    "AttendanceStatus",
+    "LeaveType",
+    "PerformanceReview",
 ]

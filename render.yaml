@@ -1,0 +1,73 @@
+services:
+  - type: web
+    name: robis-erp-backend
+    env: python
+    region: singapore
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # Python version
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+      # Database connection (manual config)
+      - key: DB_HOST
+        fromDatabase:
+          name: robis-erp-db
+          property: host
+
+      - key: DB_PORT
+        fromDatabase:
+          name: robis-erp-db
+          property: port
+
+      - key: DB_NAME
+        value: robis_erp_db
+
+      - key: DB_USER
+        fromDatabase:
+          name: robis-erp-db
+          property: user
+
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: robis-erp-db
+          property: password
+
+      # JWT Authentication
+      - key: SECRET_KEY
+        generateValue: true
+
+      - key: ALGORITHM
+        value: HS256
+
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+
+      # App config
+      - key: APP_NAME
+        value: Robis ERP API
+
+      - key: DEBUG
+        value: False
+
+      # Google Gemini AI - MANUAL INPUT REQUIRED
+      - key: GOOGLE_API_KEY
+        sync: false
+
+      - key: GEMINI_MODEL
+        value: gemini-pro
+
+      - key: GEMINI_MAX_TOKENS
+        value: 1000
+
+      - key: GEMINI_TEMPERATURE
+        value: 0.7
+
+databases:
+  - name: robis-erp-db
+    databaseName: robis_erp_db
+    user: robis_admin
+    plan: free
+    region: singapore

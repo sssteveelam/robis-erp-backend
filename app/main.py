@@ -13,8 +13,11 @@ from app.api.v1 import (
     products,
     inventory,
     qc,
+    hr,
+    attendance,
+    performance,
 )
-
+from app.api.v1.endpoints import ai
 
 app = FastAPI(
     title="Robis ERP Backend API",
@@ -75,6 +78,12 @@ app.include_router(orders.router, prefix="/api/v1")
 app.include_router(products.router, prefix="/api/v1")
 app.include_router(inventory.router, prefix="/api/v1")
 app.include_router(qc.router, prefix="/api/v1")
+# HR Module Routes
+app.include_router(hr.router, prefix="/api/v1", tags=["HR"])
+app.include_router(attendance.router, prefix="/api/v1", tags=["Attendance"])
+app.include_router(performance.router, prefix="/api/v1", tags=["Performance Reviews"])
+# AI Module Routes (NEW)
+app.include_router(ai.router, prefix="/api/v1", tags=["AI Assistant"])
 
 
 @app.get("/")

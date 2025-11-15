@@ -10,6 +10,8 @@ from app.models.product import Product, ProductCategory
 from app.models.inventory import Warehouse, Batch
 from app.core.security import get_password_hash
 from datetime import date, timedelta
+from app.models.hr import Department, Position, Employee
+from app.models.attendance import Attendance
 
 
 def clear_all_data(db: Session):
@@ -469,27 +471,342 @@ def seed_inventory_data(db: Session):
     print("✅ Inventory data seeded successfully!\n")
 
 
+"""
+Seed HR Module Data
+"""
+
+
+def seed_hr_data(db: Session):
+    """Seed sample HR data"""
+    print("Seeding HR module data...")
+
+    # 1. Create Departments
+    departments_data = [
+        {
+            "name": "QC Department",
+            "type": "operation",
+            "budget": 500000000,  # 500 triệu
+        },
+        {
+            "name": "Sales Department",
+            "type": "commercial",
+            "budget": 800000000,  # 800 triệu
+        },
+        {
+            "name": "Warehouse Department",
+            "type": "operation",
+            "budget": 600000000,  # 600 triệu
+        },
+        {"name": "HR Department", "type": "support", "budget": 300000000},  # 300 triệu
+        {"name": "IT Department", "type": "support", "budget": 400000000},  # 400 triệu
+    ]
+
+    departments = {}
+    for dept_data in departments_data:
+        existing = (
+            db.query(Department).filter(Department.name == dept_data["name"]).first()
+        )
+
+        if not existing:
+            department = Department(**dept_data)
+            db.add(department)
+            db.flush()
+            departments[dept_data["name"]] = department
+            print(f"  ✓ Created department: {dept_data['name']}")
+        else:
+            departments[dept_data["name"]] = existing
+
+    # 2. Create Positions
+    positions_data = [
+        # QC Department
+        {
+            "title": "QC Staff",
+            "level": 1,
+            "department_id": departments["QC Department"].id,
+            "description": "Nhân viên QC entry-level",
+        },
+        {
+            "title": "QC Senior",
+            "level": 3,
+            "department_id": departments["QC Department"].id,
+            "description": "QC có kinh nghiệm",
+        },
+        {
+            "title": "QC Manager",
+            "level": 5,
+            "department_id": departments["QC Department"].id,
+            "description": "Quản lý QC",
+        },
+        # Sales Department
+        {
+            "title": "Sales Rep",
+            "level": 1,
+            "department_id": departments["Sales Department"].id,
+            "description": "Nhân viên kinh doanh",
+        },
+        {
+            "title": "Sales Senior",
+            "level": 3,
+            "department_id": departments["Sales Department"].id,
+            "description": "Nhân viên kinh doanh senior",
+        },
+        {
+            "title": "Sales Manager",
+            "level": 5,
+            "department_id": departments["Sales Department"].id,
+            "description": "Quản lý kinh doanh",
+        },
+        # Warehouse Department
+        {
+            "title": "Warehouse Staff",
+            "level": 1,
+            "department_id": departments["Warehouse Department"].id,
+            "description": "Nhân viên kho",
+        },
+        {
+            "title": "Warehouse Supervisor",
+            "level": 3,
+            "department_id": departments["Warehouse Department"].id,
+            "description": "Giám sát kho",
+        },
+        {
+            "title": "Warehouse Manager",
+            "level": 5,
+            "department_id": departments["Warehouse Department"].id,
+            "description": "Quản lý kho",
+        },
+        # HR Department
+        {
+            "title": "HR Staff",
+            "level": 1,
+            "department_id": departments["HR Department"].id,
+            "description": "Nhân viên nhân sự",
+        },
+        {
+            "title": "HR Manager",
+            "level": 5,
+            "department_id": departments["HR Department"].id,
+            "description": "Quản lý nhân sự",
+        },
+        # IT Department
+        {
+            "title": "Developer",
+            "level": 2,
+            "department_id": departments["IT Department"].id,
+            "description": "Lập trình viên",
+        },
+        {
+            "title": "Senior Developer",
+            "level": 3,
+            "department_id": departments["IT Department"].id,
+            "description": "Lập trình viên senior",
+        },
+        {
+            "title": "Tech Lead",
+            "level": 4,
+            "department_id": departments["IT Department"].id,
+            "description": "Tech Lead",
+        },
+        {
+            "title": "IT Manager",
+            "level": 5,
+            "department_id": departments["IT Department"].id,
+            "description": "Quản lý IT",
+        },
+    ]
+
+    positions = {}
+    for pos_data in positions_data:
+        existing = (
+            db.query(Position).filter(Position.title == pos_data["title"]).first()
+        )
+
+        if not existing:
+            position = Position(**pos_data)
+            db.add(position)
+            db.flush()
+            positions[pos_data["title"]] = position
+            print(
+                f"  ✓ Created position: {pos_data['title']} (Level {pos_data['level']})"
+            )
+        else:
+            positions[pos_data["title"]] = existing
+
+    # 3. Create Employees
+    from datetime import date, timedelta
+
+    employees_data = [
+        # QC Department
+        {
+            "full_name": "Nguyễn Văn An",
+            "email": "emp0001@robis.vn",
+            "phone": "0901234567",
+            "department_id": departments["QC Department"].id,
+            "position_id": positions["QC Manager"].id,
+            "hire_date": date.today() - timedelta(days=730),  # 2 năm trước
+            "employment_status": "active",
+            "salary_range": "15-20M",
+        },
+        {
+            "full_name": "Trần Thị Bình",
+            "email": "emp0002@robis.vn",
+            "phone": "0902345678",
+            "department_id": departments["QC Department"].id,
+            "position_id": positions["QC Senior"].id,
+            "direct_manager_id": None,  # Sẽ update sau
+            "hire_date": date.today() - timedelta(days=365),
+            "employment_status": "active",
+            "salary_range": "9-12M",
+        },
+        # Sales Department
+        {
+            "full_name": "Lê Văn Cường",
+            "email": "emp0003@robis.vn",
+            "phone": "0903456789",
+            "department_id": departments["Sales Department"].id,
+            "position_id": positions["Sales Manager"].id,
+            "hire_date": date.today() - timedelta(days=900),
+            "employment_status": "active",
+            "salary_range": "15-20M",
+        },
+        {
+            "full_name": "Phạm Thị Dung",
+            "email": "emp0004@robis.vn",
+            "phone": "0904567890",
+            "department_id": departments["Sales Department"].id,
+            "position_id": positions["Sales Rep"].id,
+            "hire_date": date.today() - timedelta(days=180),
+            "employment_status": "active",
+            "salary_range": "6-9M",
+        },
+        # Warehouse Department
+        {
+            "full_name": "Hoàng Văn Em",
+            "email": "emp0005@robis.vn",
+            "phone": "0905678901",
+            "department_id": departments["Warehouse Department"].id,
+            "position_id": positions["Warehouse Manager"].id,
+            "hire_date": date.today() - timedelta(days=1095),  # 3 năm
+            "employment_status": "active",
+            "salary_range": "15-20M",
+        },
+        {
+            "full_name": "Đặng Thị Phương",
+            "email": "emp0006@robis.vn",
+            "phone": "0906789012",
+            "department_id": departments["Warehouse Department"].id,
+            "position_id": positions["Warehouse Staff"].id,
+            "hire_date": date.today() - timedelta(days=90),
+            "employment_status": "probation",
+            "salary_range": "6-9M",
+        },
+        # HR Department
+        {
+            "full_name": "Vũ Văn Giang",
+            "email": "emp0007@robis.vn",
+            "phone": "0907890123",
+            "department_id": departments["HR Department"].id,
+            "position_id": positions["HR Manager"].id,
+            "hire_date": date.today() - timedelta(days=600),
+            "employment_status": "active",
+            "salary_range": "15-20M",
+        },
+        # IT Department
+        {
+            "full_name": "Bùi Văn Hùng",
+            "email": "emp0008@robis.vn",
+            "phone": "0908901234",
+            "department_id": departments["IT Department"].id,
+            "position_id": positions["IT Manager"].id,
+            "hire_date": date.today() - timedelta(days=1200),
+            "employment_status": "active",
+            "salary_range": "20-30M",
+        },
+        {
+            "full_name": "Mai Thị Lan",
+            "email": "emp0009@robis.vn",
+            "phone": "0909012345",
+            "department_id": departments["IT Department"].id,
+            "position_id": positions["Senior Developer"].id,
+            "hire_date": date.today() - timedelta(days=450),
+            "employment_status": "active",
+            "salary_range": "12-15M",
+        },
+        {
+            "full_name": "Ngô Văn Minh",
+            "email": "emp0010@robis.vn",
+            "phone": "0900123456",
+            "department_id": departments["IT Department"].id,
+            "position_id": positions["Developer"].id,
+            "hire_date": date.today() - timedelta(days=120),
+            "employment_status": "active",
+            "salary_range": "9-12M",
+        },
+    ]
+
+    # Auto-generate employee codes
+    from app.services.hr_service import EmployeeService
+
+    created_employees = []
+    for emp_data in employees_data:
+        existing = (
+            db.query(Employee).filter(Employee.email == emp_data["email"]).first()
+        )
+
+        if not existing:
+            # Generate employee code
+            employee_code = EmployeeService.generate_employee_code(db)
+
+            employee = Employee(employee_code=employee_code, **emp_data)
+            db.add(employee)
+            db.flush()
+            created_employees.append(employee)
+            print(f"  ✓ Created employee: {employee_code} - {emp_data['full_name']}")
+        else:
+            created_employees.append(existing)
+
+    # Update direct_manager_id
+    if len(created_employees) >= 2:
+        created_employees[1].direct_manager_id = created_employees[0].id  # Bình -> An
+    if len(created_employees) >= 4:
+        created_employees[3].direct_manager_id = created_employees[
+            2
+        ].id  # Dung -> Cường
+    if len(created_employees) >= 6:
+        created_employees[5].direct_manager_id = created_employees[4].id  # Phương -> Em
+    if len(created_employees) >= 10:
+        created_employees[8].direct_manager_id = created_employees[7].id  # Lan -> Hùng
+        created_employees[9].direct_manager_id = created_employees[7].id  # Minh -> Hùng
+
+    db.commit()
+    print("✅ HR module data seeded successfully!\n")
+
+
+# ============= UPDATE MAIN FUNCTION =============
+
+
 def main():
     """Main seed function"""
     db = SessionLocal()
 
     try:
-        # OPTION: Clear all data first (UNCOMMENT nếu muốn reset)
-        # clear_all_data(db)
-
-        # Seed data
+        # Existing seeds
         seed_roles_and_permissions(db)
         seed_test_users(db)
         seed_inventory_data(db)
 
+        # NEW: Seed HR data
+        seed_hr_data(db)
+
         print("=" * 50)
         print("🎉 ALL DATA SEEDED SUCCESSFULLY!")
         print("=" * 50)
-        print("\n📋 Test Users:")
-        print("  - warehouse / wh123456 (WAREHOUSE_STAFF - 5 permissions)")
-        print("  - qc_staff / qc123456 (QC_STAFF)")
-        print("  - sales_rep / sales123 (SALES_REP)")
-        print("  - hr_staff / hr123456 (HR_STAFF)")
+        print("\n📋 Summary:")
+        print("  ✓ Roles & Permissions")
+        print("  ✓ Test Users (4)")
+        print("  ✓ Inventory Data (Products, Warehouses, Batches)")
+        print("  ✓ HR Data (5 Departments, 15 Positions, 10 Employees)")
+        print("\n🚀 Ready to test HR Module API!")
 
     except Exception as e:
         print(f"❌ Error seeding data: {e}")
