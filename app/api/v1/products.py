@@ -144,6 +144,23 @@ def get_products(
 
 
 @router.get(
+    "/products/low-stock",
+    response_model=list[Product],
+    dependencies=[require_permission("products:read")],
+)
+def get_low_stock_products(
+    db: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)
+):
+    """
+    Lấy danh sách products có tồn kho thấp hơn min_stock
+
+    Permission: products:read
+    Roles: Tất cả authenticated users
+    """
+    return ProductService.check_low_stock(db)
+
+
+@router.get(
     "/products/{product_id}",
     response_model=Product,
     dependencies=[require_permission("products:read")],
@@ -195,20 +212,3 @@ def update_product(
         )
 
     return product
-
-
-@router.get(
-    "/products/low-stock",
-    response_model=list[Product],
-    dependencies=[require_permission("products:read")],
-)
-def get_low_stock_products(
-    db: Session = Depends(get_db), current_user: UserModel = Depends(get_current_user)
-):
-    """
-    Lấy danh sách products có tồn kho thấp hơn min_stock
-
-    Permission: products:read
-    Roles: Tất cả authenticated users
-    """
-    return ProductService.check_low_stock(db)
