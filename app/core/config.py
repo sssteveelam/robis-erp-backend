@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     # Public QR/Kiosk Service Token (NEW)
     ATTEND_PUBLIC_TOKEN: Optional[str] = None
 
+    # Public Employees endpoint options (NEW)
+    PUBLIC_EMPLOYEES_OPEN: bool = False  # Cho phép GET /api/v1/public/employees không cần token
+    PUBLIC_EMPLOYEES_MIN_SEARCH_LEN: int = 2  # Bắt buộc search tối thiểu N ký tự khi mở public
+    PUBLIC_EMPLOYEES_MAX_PAGE_SIZE: int = 20  # Giới hạn page_size khi mở public
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

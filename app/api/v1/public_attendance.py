@@ -11,7 +11,7 @@ Endpoints:
 - POST /api/v1/public/attendance/leave - Đăng ký nghỉ phép
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import date, time
@@ -28,6 +28,7 @@ from app.schemas.common import PaginatedResponse
 from app.services.attendance_service import AttendanceService
 from app.services.hr_service import EmployeeService
 from app.api.dependencies.service_auth import service_token_auth
+from app.core.config import settings
 
 router = APIRouter(prefix="/api/v1/public", tags=["Public Attendance (QR/Kiosk)"])
 
@@ -38,7 +39,6 @@ router = APIRouter(prefix="/api/v1/public", tags=["Public Attendance (QR/Kiosk)"
 @router.get(
     "/employees",
     response_model=PaginatedResponse[PublicEmployee],
-    dependencies=[Depends(service_token_auth)],
 )
 def public_get_employees(
     page: int = Query(default=1, ge=1),
@@ -47,6 +47,7 @@ def public_get_employees(
         default=None, description="Tìm theo name, email, employee_code"
     ),
     db: Session = Depends(get_db),
+    request: Request = None,
 ):
     """
     Lấy danh sách nhân viên để chọn từ QR kiosk
