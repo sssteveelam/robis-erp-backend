@@ -33,6 +33,43 @@ from app.core.config import settings
 router = APIRouter(prefix="/api/v1/public", tags=["Public Attendance (QR/Kiosk)"])
 
 
+def _ensure_public_auth(request: Request) -> bool:
+    """
+    Bảo vệ endpoints attendance (check-in/out/leave).
+
+    - Nếu PUBLIC_ATTEND_ACTIONS_OPEN=False => bắt buộc service token
+    - Nếu PUBLIC_ATTEND_ACTIONS_OPEN=True => cho phép:
+        + Có service token hợp lệ HOẶC
+        + Kiosk secret và/hoặc IP trong whitelist
+    """
+    # 1) Nếu chưa mở public actions -> yêu cầu token
+    if not settings.PUBLIC_ATTEND_ACTIONS_OPEN:
+        return service_token_auth(request)
+
+    # 2) Nếu đã mở, ưu tiên cho phép nếu có token hợp lệ
+    try:
+        return service_token_auth(request)
+    except Exception:
+        pass  # Không có/không đúng token, chuyển sang kiểm tra kiosk
+
+    # 3) Kiểm tra kiosk secret (nếu cấu hình)
+    kiosk_secret_cfg = (settings.PUBLIC_KIOSK_DEVICE_SECRET or "").strip()
+    if kiosk_secret_cfg:
+        kiosk_secret = (request.headers.get("X-Kiosk-Secret", "") or "").strip()
+        if kiosk_secret != kiosk_secret_cfg:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated (kiosk)")
+
+    # 4) Kiểm tra whitelist IP (nếu cấu hình)
+    ip_csv = (settings.PUBLIC_KIOSK_IP_WHITELIST or "").strip()
+    if ip_csv:
+        allowed = {ip.strip() for ip in ip_csv.split(",") if ip.strip()}
+        req_ip = request.client.host if request and request.client else None
+        if allowed and req_ip not in allowed:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden from this IP")
+
+    return True
+
+
 # ============= PUBLIC EMPLOYEE ENDPOINTS =============
 
 
@@ -55,8 +92,24 @@ def public_get_employees(
     Chỉ trả về các fields công khai (id, employee_code, full_name, department_id).
     Không trả về thông tin nhạy cảm (salary, personal info).
 
-    **Authentication**: Service token (ATTEND_PUBLIC_TOKEN) via Authorization header
+    **Authentication**:
+    - Mặc định: Service token (ATTEND_PUBLIC_TOKEN) trong Authorization header
+    - Nếu bật PUBLIC_EMPLOYEES_OPEN: không cần token, nhưng bắt buộc search tối thiểu và giới hạn page_size
     """
+    # Auth/toggle logic for employees list
+    if not settings.PUBLIC_EMPLOYEES_OPEN:
+        # Require service token
+        service_token_auth(request)
+    else:
+        # Enforce search minimum length
+        if not search or len(search.strip()) < settings.PUBLIC_EMPLOYEES_MIN_SEARCH_LEN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Vui lòng nhập từ khóa tối thiểu {settings.PUBLIC_EMPLOYEES_MIN_SEARCH_LEN} ký tự",
+            )
+        # Cap page_size when open
+        page_size = min(page_size, settings.PUBLIC_EMPLOYEES_MAX_PAGE_SIZE)
+
     skip = (page - 1) * page_size
 
     # Gọi service hiện có
@@ -91,11 +144,11 @@ def public_get_employees(
     "/attendance/check-in",
     response_model=Attendance,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(service_token_auth)],
 )
 def public_check_in(
     payload: AttendanceCheckIn,
     db: Session = Depends(get_db),
+    request: Request = None,
 ):
     """
     Chấm công vào (QR/Kiosk)
@@ -107,18 +160,12 @@ def public_check_in(
     - check_in: Giờ chấm công (HH:MM:SS)
     - note: Ghi chú (tùy chọn)
 
-    **Authentication**: Service token (ATTEND_PUBLIC_TOKEN) via Authorization header
-
-    **Example**:
-    ```json
-    {
-      "employee_id": 123,
-      "check_in": "09:05:00",
-      "note": "Kẹt xe"
-    }
-    ```
+    **Authentication**:
+    - Mặc định: Service token (ATTEND_PUBLIC_TOKEN) trong Authorization header
+    - Nếu bật PUBLIC_ATTEND_ACTIONS_OPEN: chấp nhận token HOẶC header X-Kiosk-Secret hợp lệ và/hoặc IP whitelist
     """
     try:
+        _ensure_public_auth(request)
         return AttendanceService.check_in(db, payload)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -128,11 +175,11 @@ def public_check_in(
     "/attendance/check-out",
     response_model=Attendance,
     status_code=status.HTTP_200_OK,
-    dependencies=[Depends(service_token_auth)],
 )
 def public_check_out(
     payload: AttendanceCheckOut,
     db: Session = Depends(get_db),
+    request: Request = None,
 ):
     """
     Chấm công ra (QR/Kiosk)
@@ -144,17 +191,12 @@ def public_check_out(
     - check_out: Giờ chấm công (HH:MM:SS)
     - note: Ghi chú (tùy chọn)
 
-    **Authentication**: Service token (ATTEND_PUBLIC_TOKEN) via Authorization header
-
-    **Example**:
-    ```json
-    {
-      "employee_id": 123,
-      "check_out": "17:30:00"
-    }
-    ```
+    **Authentication**:
+    - Mặc định: Service token (ATTEND_PUBLIC_TOKEN) trong Authorization header
+    - Nếu bật PUBLIC_ATTEND_ACTIONS_OPEN: chấp nhận token HOẶC header X-Kiosk-Secret hợp lệ và/hoặc IP whitelist
     """
     try:
+        _ensure_public_auth(request)
         return AttendanceService.check_out(db, payload)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -164,11 +206,11 @@ def public_check_out(
     "/attendance/leave",
     response_model=Attendance,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(service_token_auth)],
 )
 def public_request_leave(
     payload: dict,  # Flexible payload
     db: Session = Depends(get_db),
+    request: Request = None,
 ):
     """
     Đăng ký nghỉ phép (QR/Kiosk)
@@ -195,6 +237,7 @@ def public_request_leave(
     ```
     """
     try:
+        _ensure_public_auth(request)
         # Validate required fields
         required_fields = ["employee_id", "leave_type", "start_date", "end_date"]
         for field in required_fields:
