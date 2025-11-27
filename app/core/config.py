@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     GEMINI_MAX_TOKENS: int = 1000
     GEMINI_TEMPERATURE: float = 0.7
 
+    # Public QR/Kiosk Service Token (NEW)
+    ATTEND_PUBLIC_TOKEN: Optional[str] = None
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

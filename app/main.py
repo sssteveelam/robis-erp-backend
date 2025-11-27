@@ -16,6 +16,7 @@ from app.api.v1 import (
     hr,
     attendance,
     performance,
+    public_attendance,
 )
 from app.api.v1.endpoints import ai
 
@@ -82,6 +83,8 @@ app.include_router(qc.router, prefix="/api/v1")
 app.include_router(hr.router, prefix="/api/v1", tags=["HR"])
 app.include_router(attendance.router, prefix="/api/v1", tags=["Attendance"])
 app.include_router(performance.router, prefix="/api/v1", tags=["Performance Reviews"])
+# Public Attendance Routes (QR/Kiosk - NEW)
+app.include_router(public_attendance.router)
 # AI Module Routes (NEW)
 app.include_router(ai.router, prefix="/api/v1", tags=["AI Assistant"])
 

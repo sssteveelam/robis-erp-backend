@@ -131,3 +131,11 @@ class EmployeeWithDetails(Employee):
     department: Optional[Department] = None
     position: Optional[Position] = None
     direct_manager: Optional[Employee] = None
+
+
+# ============= PUBLIC (SLIM) EMPLOYEE SCHEMA =============
+
+class PublicEmployee(BaseModel):
+    id: int
+    employee_code: str
+    full_name: str
