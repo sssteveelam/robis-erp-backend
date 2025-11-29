@@ -20,6 +20,25 @@ from app.api.v1 import (
 )
 from app.api.v1.endpoints import ai
 
+# Auto-run Alembic migrations on startup (safe if already at head)
+import os
+from alembic import command as alembic_command
+from alembic.config import Config as AlembicConfig
+
+def run_db_migrations():
+    try:
+        # Resolve alembic.ini relative to project root
+        current_dir = os.path.dirname(__file__)  # app/
+        alembic_ini = os.path.normpath(os.path.join(current_dir, "..", "alembic.ini"))
+        if not os.path.exists(alembic_ini):
+            # Fallback to CWD
+            alembic_ini = "alembic.ini"
+        cfg = AlembicConfig(alembic_ini)
+        alembic_command.upgrade(cfg, "head")
+    except Exception as e:
+        # Log and continue startup; avoids blocking app if migration is no-op or already applied
+        print(f"[Startup] Alembic migration skipped/error: {e}")
+
 app = FastAPI(
     title="Robis ERP Backend API",
     description="""
@@ -52,6 +71,11 @@ Hệ thống sử dụng Role-Based Access Control (RBAC):
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Run DB migrations automatically on startup (idempotent)
+@app.on_event("startup")
+async def _run_migrations_on_startup():
+    run_db_migrations()
 
 app.add_middleware(
     CORSMiddleware,
