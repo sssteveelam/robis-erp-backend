@@ -17,6 +17,8 @@ from app.models.order import Order, OrderItem, OrderStatusLog  # ← THÊM DÒNG
 from app.models.inventory import Batch, Stock, StockMovement, QCCheckpoint
 from app.models.qc import QCInspection, QCDefect, QCMeasurement
 
+
+
 # this is the Alembic Config object
 config = context.config
 
